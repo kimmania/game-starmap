@@ -253,20 +253,61 @@ class StarMapApp {
   private handleHint(): void {
     if (!this.state || this.state.won) return;
     this.stashUndo();
-    const unrevealed: [number, number][] = [];
-    for (let r = 0; r < this.state.size; r++) {
-      for (let c = 0; c < this.state.size; c++) {
-        if (
-          this.state.solution[r * this.state.size + c] === '1' &&
-          this.state.grid[r][c] !== 'star'
-        ) {
-          unrevealed.push([r, c]);
+    const { size, grid, regions, solution } = this.state;
+
+    // Gather current tallies so we can skip cells that would overfill
+    const rowStars = Array.from({ length: size }, () => 0);
+    const colStars = Array.from({ length: size }, () => 0);
+    const regStars = new Map<number, number>();
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (grid[r][c] === 'star') {
+          rowStars[r]++;
+          colStars[c]++;
+          const rid = regions[r][c];
+          regStars.set(rid, (regStars.get(rid) || 0) + 1);
         }
       }
     }
-    if (unrevealed.length === 0) return;
-    const [r, c] = unrevealed[Math.floor(Math.random() * unrevealed.length)];
-    this.state.grid[r][c] = 'star';
+
+    const safe: [number, number][] = [];
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (solution[r * size + c] !== '1') continue;
+        if (grid[r][c] === 'star') continue;
+        if (grid[r][c] === 'empty') continue; // never override a player's explicit empty
+        if (rowStars[r] >= 2) continue;
+        if (colStars[c] >= 2) continue;
+        const rid = regions[r][c];
+        if ((regStars.get(rid) || 0) >= 2) continue;
+        // adjacency check: no star in the 3×3 neighbourhood
+        let touches = false;
+        for (let dr = -1; dr <= 1 && !touches; dr++) {
+          for (let dc = -1; dc <= 1 && !touches; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = r + dr;
+            const nc = c + dc;
+            if (nr >= 0 && nr < size && nc >= 0 && nc < size && grid[nr][nc] === 'star') {
+              touches = true;
+            }
+          }
+        }
+        if (!touches) {
+          safe.push([r, c]);
+        }
+      }
+    }
+
+    if (safe.length === 0) {
+      // Player's board has diverged from the stored solution or is too full
+      alert(
+        'No safe hints available for your current board. You may be building a different valid solution than the one stored for this puzzle.',
+      );
+      return;
+    }
+
+    const [r, c] = safe[Math.floor(Math.random() * safe.length)];
+    grid[r][c] = 'star';
     if (this.autoAssist) {
       this.applyDeductions();
     }
