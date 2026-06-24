@@ -1,5 +1,5 @@
 import type { CellState, Difficulty, GameState, Puzzle } from './types';
-import { RECENT_KEY } from './types';
+import { DIFFICULTY_GIVENS, RECENT_KEY } from './types';
 
 const banks: Record<Difficulty, Puzzle[] | null> = {
   tutorial: null,
@@ -52,7 +52,16 @@ export function createGameState(puzzle: Puzzle, difficulty: Difficulty): GameSta
     mistakes: 0,
     won: false,
     history: [],
+    givens: [],
   };
+}
+
+function shuffleArray<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
 
 export async function startNewGame(difficulty: Difficulty): Promise<GameState> {
@@ -62,7 +71,28 @@ export async function startNewGame(difficulty: Difficulty): Promise<GameState> {
   const pool = candidates.length > 0 ? candidates : bank;
   const puzzle = pool[Math.floor(Math.random() * pool.length)];
   addRecent(puzzle.id);
-  return createGameState(puzzle, difficulty);
+  const state = createGameState(puzzle, difficulty);
+
+  const givenCount = DIFFICULTY_GIVENS[difficulty];
+  if (givenCount > 0) {
+    const stars: [number, number][] = [];
+    for (let r = 0; r < state.size; r++) {
+      for (let c = 0; c < state.size; c++) {
+        if (state.solution[r * state.size + c] === '1') {
+          stars.push([r, c]);
+        }
+      }
+    }
+    if (stars.length >= givenCount) {
+      shuffleArray(stars);
+      state.givens = stars.slice(0, givenCount).map(([r, c]) => ({ row: r, col: c }));
+      for (const g of state.givens) {
+        state.grid[g.row][g.col] = 'star';
+      }
+    }
+  }
+
+  return state;
 }
 
 export function resetGameState(state: GameState): void {
@@ -71,6 +101,10 @@ export function resetGameState(state: GameState): void {
     for (let c = 0; c < size; c++) {
       state.grid[r][c] = 'unknown';
     }
+  }
+  // Restore givens
+  for (const g of state.givens || []) {
+    state.grid[g.row][g.col] = 'star';
   }
   state.won = false;
   state.mistakes = 0;

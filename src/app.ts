@@ -7,6 +7,7 @@ import {
   bindControlHandlers,
   getSelectedDifficulty,
   setDifficulty,
+  setHintEnabled,
   setUndoEnabled,
   showWinBanner,
   updateDifficultyLabel,
@@ -34,6 +35,7 @@ class StarMapApp {
       onNewGame: () => void this.newGame(),
       onReset: () => this.handleReset(),
       onUndo: () => this.handleUndo(),
+      onHint: () => this.handleHint(),
       onHelp: () => openHelp(),
       onDifficultyChange: () => void this.newGame(),
     });
@@ -42,7 +44,10 @@ class StarMapApp {
 
     const saved = loadSavedGame();
     if (saved && saved.grid && saved.regions && saved.difficulty && !saved.won) {
-      this.state = saved as GameState;
+      this.state = {
+        ...saved,
+        givens: saved.givens || [],
+      } as GameState;
       setDifficulty(saved.difficulty);
       this.refresh();
     } else {
@@ -74,6 +79,12 @@ class StarMapApp {
     }
   }
 
+  private isGiven(row: number, col: number): boolean {
+    return (
+      this.state?.givens?.some((g) => g.row === row && g.col === col) ?? false
+    );
+  }
+
   private handleReset(): void {
     if (!this.state) return;
     resetGameState(this.state);
@@ -88,6 +99,7 @@ class StarMapApp {
 
   private handleTap(row: number, col: number): void {
     if (!this.state || this.state.won) return;
+    if (this.isGiven(row, col)) return;
     this.stashUndo();
     const current = this.state.grid[row][col];
     const next: CellState =
@@ -98,8 +110,8 @@ class StarMapApp {
 
   private handleLongPress(row: number, col: number): void {
     if (!this.state || this.state.won) return;
+    if (this.isGiven(row, col)) return;
     this.stashUndo();
-    // Long-press always forces empty (X)
     this.state.grid[row][col] = 'empty';
     this.refresh();
   }
@@ -108,6 +120,26 @@ class StarMapApp {
     if (!this.state || !this.previousGrid) return;
     this.state.grid = this.previousGrid;
     this.previousGrid = null;
+    this.refresh();
+  }
+
+  private handleHint(): void {
+    if (!this.state || this.state.won) return;
+    this.stashUndo();
+    const unrevealed: [number, number][] = [];
+    for (let r = 0; r < this.state.size; r++) {
+      for (let c = 0; c < this.state.size; c++) {
+        if (
+          this.state.solution[r * this.state.size + c] === '1' &&
+          this.state.grid[r][c] !== 'star'
+        ) {
+          unrevealed.push([r, c]);
+        }
+      }
+    }
+    if (unrevealed.length === 0) return;
+    const [r, c] = unrevealed[Math.floor(Math.random() * unrevealed.length)];
+    this.state.grid[r][c] = 'star';
     this.refresh();
   }
 
@@ -139,6 +171,7 @@ class StarMapApp {
     updateMistakes(mistakes);
     updatePuzzleId(this.state.puzzleId);
     setUndoEnabled(this.previousGrid !== null);
+    setHintEnabled(true);
     updateDifficultyLabel(
       this.state.difficulty.charAt(0).toUpperCase() + this.state.difficulty.slice(1),
     );

@@ -12,14 +12,14 @@ from pathlib import Path
 # Config
 # ---------------------------------------------------------------------------
 DIFFICULTY = {
-    "tutorial": {"size": 8,  "enforce_uniqueness": True},
-    "easy":     {"size": 8,  "enforce_uniqueness": True},
-    "medium":   {"size": 10, "enforce_uniqueness": False},
-    "hard":     {"size": 10, "enforce_uniqueness": False},
-    "expert":   {"size": 12, "enforce_uniqueness": False},
-    "master":   {"size": 14, "enforce_uniqueness": False},
+    "tutorial": {"size": 8,  "enforce_uniqueness": True, "target": 2},
+    "easy":     {"size": 8,  "enforce_uniqueness": True, "target": 500},
+    "medium":   {"size": 10, "enforce_uniqueness": False, "target": 500},
+    "hard":     {"size": 10, "enforce_uniqueness": False, "target": 500},
+    "expert":   {"size": 12, "enforce_uniqueness": False, "target": 500},
+    "master":   {"size": 14, "enforce_uniqueness": False, "target": 500},
 }
-TARGET = 500
+TARGET = 500  # default fallback
 OUTDIR = Path(__file__).resolve().parent.parent / "public" / "puzzles"
 OUTDIR.mkdir(parents=True, exist_ok=True)
 
@@ -288,7 +288,8 @@ def generate_bank(difficulty, info, target):
 if __name__ == "__main__":
     start = time.time()
     for diff, info in DIFFICULTY.items():
-        puzzles = generate_bank(diff, info, TARGET)
+        target = info.get("target", TARGET)
+        puzzles = generate_bank(diff, info, target)
         filename = OUTDIR / f"{diff}.json"
         with open(filename, "w") as f:
             json.dump(puzzles, f)

@@ -12,6 +12,7 @@ export function saveGame(state: GameState): void {
       mistakes: state.mistakes,
       won: state.won,
       history: state.history,
+      givens: state.givens,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
   } catch {

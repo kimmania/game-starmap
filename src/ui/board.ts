@@ -40,15 +40,11 @@ export function renderBoard(board: BoardElements, state: GameState): void {
   const violations = getViolationCells(state.grid, state.regions);
   const violationSet = new Set(violations.map((v) => `${v.row},${v.col}`));
 
-  // Precompute region max for consistent shading
-  let maxRegion = 0;
-  for (let r = 0; r < state.size; r++) {
-    for (let c = 0; c < state.size; c++) {
-      maxRegion = Math.max(maxRegion, state.regions[r][c]);
-    }
-  }
+  // Build given lookup
+  const givenSet = new Set(
+    (state.givens || []).map((g) => `${g.row},${g.col}`),
+  );
 
-  // Render cells and borders
   for (let r = 0; r < state.size; r++) {
     for (let c = 0; c < state.size; c++) {
       const cell = board.cells[r][c];
@@ -57,20 +53,21 @@ export function renderBoard(board: BoardElements, state: GameState): void {
 
       cell.className = 'cell';
 
-      // Basic state
       if (st === 'star') cell.classList.add('star');
       else if (st === 'empty') cell.classList.add('empty');
       else cell.classList.add('unknown');
 
-      // Region shading palette (consistent per region ID)
       const shades = ['shade-a', 'shade-b', 'shade-c', 'shade-d'];
       cell.classList.add(shades[myRegion % shades.length]);
+
+      if (givenSet.has(`${r},${c}`)) {
+        cell.classList.add('given');
+      }
 
       if (violationSet.has(`${r},${c}`)) {
         cell.classList.add('violation');
       }
 
-      // Borders: thick line when neighbor is different region
       if (r === 0 || state.regions[r - 1][c] !== myRegion) {
         cell.classList.add('border-top');
       }
@@ -84,6 +81,34 @@ export function renderBoard(board: BoardElements, state: GameState): void {
         cell.classList.add('border-left');
       }
     }
+  }
+
+  // Clear old counters
+  board.container.querySelectorAll('.row-counter, .col-counter').forEach((el) => el.remove());
+
+  // Row counters (right edge of each row)
+  for (let r = 0; r < state.size; r++) {
+    const rowStars = state.grid[r].filter((s) => s === 'star').length;
+    const counter = document.createElement('span');
+    counter.className = 'row-counter';
+    counter.textContent = `${rowStars}/2`;
+    if (rowStars === 2) counter.classList.add('complete');
+    else if (rowStars === 1) counter.classList.add('partial');
+    board.cells[r][state.size - 1].appendChild(counter);
+  }
+
+  // Column counters (bottom edge of each column)
+  for (let c = 0; c < state.size; c++) {
+    let colStars = 0;
+    for (let r = 0; r < state.size; r++) {
+      if (state.grid[r][c] === 'star') colStars++;
+    }
+    const counter = document.createElement('span');
+    counter.className = 'col-counter';
+    counter.textContent = `${colStars}/2`;
+    if (colStars === 2) counter.classList.add('complete');
+    else if (colStars === 1) counter.classList.add('partial');
+    board.cells[state.size - 1][c].appendChild(counter);
   }
 }
 

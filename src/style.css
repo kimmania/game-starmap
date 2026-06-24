@@ -456,3 +456,45 @@ html, body {
     font-size: 0.88rem;
   }
 }
+
+/* Givens */
+.cell.given.star {
+  box-shadow: inset 0 0 0 2.5px rgba(255, 215, 0, 0.5);
+}
+
+/* Row & Column counters */
+.row-counter,
+.col-counter {
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: var(--muted);
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+  background: rgba(15, 15, 26, 0.85);
+  padding: 1px 3px;
+  border-radius: 3px;
+  line-height: 1;
+}
+
+.row-counter {
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.col-counter {
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.row-counter.complete,
+.col-counter.complete {
+  color: var(--success);
+}
+
+.row-counter.partial,
+.col-counter.partial {
+  color: var(--accent);
+}

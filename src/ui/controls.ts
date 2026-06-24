@@ -4,12 +4,14 @@ export function bindControlHandlers(options: {
   onNewGame: () => void;
   onReset: () => void;
   onUndo: () => void;
+  onHint: () => void;
   onHelp: () => void;
   onDifficultyChange: () => void;
 }): void {
   document.getElementById('new-game')?.addEventListener('click', options.onNewGame);
   document.getElementById('reset')?.addEventListener('click', options.onReset);
   document.getElementById('undo')?.addEventListener('click', options.onUndo);
+  document.getElementById('hint')?.addEventListener('click', options.onHint);
   document.getElementById('help')?.addEventListener('click', options.onHelp);
   document.getElementById('difficulty')?.addEventListener('change', options.onDifficultyChange);
 }
@@ -49,5 +51,10 @@ export function updatePuzzleId(id: string): void {
 
 export function setUndoEnabled(enabled: boolean): void {
   const el = document.getElementById('undo') as HTMLButtonElement | null;
+  if (el) el.disabled = !enabled;
+}
+
+export function setHintEnabled(enabled: boolean): void {
+  const el = document.getElementById('hint') as HTMLButtonElement | null;
   if (el) el.disabled = !enabled;
 }
