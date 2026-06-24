@@ -201,10 +201,10 @@ html, body {
   border: 1px solid var(--border);
 }
 
-.cell.shade-a { background: #141428; }
-.cell.shade-b { background: #181830; }
-.cell.shade-c { background: #1c1c38; }
-.cell.shade-d { background: #202040; }
+.cell.shade-a { background: #121228; }
+.cell.shade-b { background: #1c1c38; }
+.cell.shade-c { background: #22224a; }
+.cell.shade-d { background: #2a2a5a; }
 
 .cell.unknown {
   /* default */
@@ -215,7 +215,7 @@ html, body {
 }
 
 .cell.star {
-  background: rgba(255, 215, 0, 0.15);
+  /* background overlay handled by ::after so region shade stays visible */
 }
 
 .cell::after,
@@ -226,10 +226,16 @@ html, body {
   pointer-events: none;
 }
 
+.cell.star::after {
+  inset: 0;
+  background: rgba(255, 215, 0, 0.15);
+}
+
 .cell.star::before {
   content: "⭐";
   font-size: clamp(10px, 2.8vw, 22px);
   filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.6));
+  z-index: 1;
 }
 
 .cell.empty::before {
@@ -455,6 +461,53 @@ html, body {
     padding: 7px 10px;
     font-size: 0.88rem;
   }
+}
+
+/* Mode toggle */
+.mode-toggle {
+  min-width: 44px;
+  text-align: center;
+  font-size: 1.2rem;
+  padding: 6px 10px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.mode-toggle.x-mode {
+  background: rgba(255, 100, 100, 0.12);
+  border-color: rgba(255, 100, 100, 0.4);
+  color: #ffcccc;
+}
+
+/* Settings panel */
+.settings-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+
+.setting-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.setting-hint {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
 }
 
 /* Givens */

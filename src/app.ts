@@ -6,8 +6,10 @@ import { bindBoardInteractions, createBoard, renderBoard } from './ui/board';
 import {
   bindControlHandlers,
   getSelectedDifficulty,
+  setAutoAssistChecked,
   setDifficulty,
   setHintEnabled,
+  setModeButton,
   setUndoEnabled,
   showWinBanner,
   updateDifficultyLabel,
@@ -16,14 +18,22 @@ import {
 } from './ui/controls';
 import { closeHelp, openHelp } from './ui/help';
 
+const AUTO_ASSIST_KEY = 'starmap-auto-assist';
+
 class StarMapApp {
   private state: GameState | null = null;
   private board = createBoard(document.getElementById('board')!);
   private loading = false;
   private previousGrid: CellState[][] | null = null;
+  private placeMode: 'star' | 'empty' = 'star';
+  private autoAssist = false;
 
   async init(): Promise<void> {
     fetchBank('easy').catch(() => {});
+
+    this.autoAssist = localStorage.getItem(AUTO_ASSIST_KEY) === '1';
+    setAutoAssistChecked(this.autoAssist);
+    setModeButton(this.placeMode);
 
     bindBoardInteractions(
       this.board,
@@ -38,6 +48,8 @@ class StarMapApp {
       onHint: () => this.handleHint(),
       onHelp: () => openHelp(),
       onDifficultyChange: () => void this.newGame(),
+      onModeToggle: () => this.handleModeToggle(),
+      onAutoAssistChange: (enabled) => this.handleAutoAssistChange(enabled),
     });
 
     document.addEventListener('keydown', (e) => this.handleKeydown(e));
@@ -85,6 +97,92 @@ class StarMapApp {
     );
   }
 
+  private handleModeToggle(): void {
+    this.placeMode = this.placeMode === 'star' ? 'empty' : 'star';
+    setModeButton(this.placeMode);
+  }
+
+  private handleAutoAssistChange(enabled: boolean): void {
+    this.autoAssist = enabled;
+    localStorage.setItem(AUTO_ASSIST_KEY, enabled ? '1' : '0');
+  }
+
+  private applyDeductions(): void {
+    if (!this.state || !this.autoAssist) return;
+    const { size, grid, regions } = this.state;
+    let changed = false;
+
+    do {
+      changed = false;
+
+      // Neighbors of every star → empty
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (grid[r][c] !== 'star') continue;
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              if (dr === 0 && dc === 0) continue;
+              const nr = r + dr;
+              const nc = c + dc;
+              if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
+                if (grid[nr][nc] === 'unknown' && !this.isGiven(nr, nc)) {
+                  grid[nr][nc] = 'empty';
+                  changed = true;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Rows with exactly 2 stars → rest empty
+      for (let r = 0; r < size; r++) {
+        if (grid[r].filter((s) => s === 'star').length !== 2) continue;
+        for (let c = 0; c < size; c++) {
+          if (grid[r][c] === 'unknown' && !this.isGiven(r, c)) {
+            grid[r][c] = 'empty';
+            changed = true;
+          }
+        }
+      }
+
+      // Columns with exactly 2 stars → rest empty
+      for (let c = 0; c < size; c++) {
+        let colStars = 0;
+        for (let r = 0; r < size; r++) {
+          if (grid[r][c] === 'star') colStars++;
+        }
+        if (colStars !== 2) continue;
+        for (let r = 0; r < size; r++) {
+          if (grid[r][c] === 'unknown' && !this.isGiven(r, c)) {
+            grid[r][c] = 'empty';
+            changed = true;
+          }
+        }
+      }
+
+      // Regions with exactly 2 stars → rest empty
+      const regionStars = new Map<number, number>();
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (grid[r][c] === 'star') {
+            const rid = regions[r][c];
+            regionStars.set(rid, (regionStars.get(rid) || 0) + 1);
+          }
+        }
+      }
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          const rid = regions[r][c];
+          if ((regionStars.get(rid) || 0) === 2 && grid[r][c] === 'unknown' && !this.isGiven(r, c)) {
+            grid[r][c] = 'empty';
+            changed = true;
+          }
+        }
+      }
+    } while (changed);
+  }
+
   private handleReset(): void {
     if (!this.state) return;
     resetGameState(this.state);
@@ -98,21 +196,33 @@ class StarMapApp {
   }
 
   private handleTap(row: number, col: number): void {
-    if (!this.state || this.state.won) return;
-    if (this.isGiven(row, col)) return;
+    if (!this.state || this.state.won || this.isGiven(row, col)) return;
     this.stashUndo();
     const current = this.state.grid[row][col];
-    const next: CellState =
-      current === 'unknown' ? 'star' : current === 'star' ? 'empty' : 'unknown';
+    const target = this.placeMode;
+    let next: CellState;
+    if (current === target) {
+      next = 'unknown';
+    } else if (current === 'unknown') {
+      next = target;
+    } else {
+      next = 'unknown';
+    }
     this.state.grid[row][col] = next;
+    if (this.autoAssist && next === 'star') {
+      this.applyDeductions();
+    }
     this.refresh();
   }
 
   private handleLongPress(row: number, col: number): void {
-    if (!this.state || this.state.won) return;
-    if (this.isGiven(row, col)) return;
+    if (!this.state || this.state.won || this.isGiven(row, col)) return;
     this.stashUndo();
-    this.state.grid[row][col] = 'empty';
+    const opposite = this.placeMode === 'star' ? 'empty' : 'star';
+    this.state.grid[row][col] = opposite;
+    if (this.autoAssist && opposite === 'star') {
+      this.applyDeductions();
+    }
     this.refresh();
   }
 
@@ -140,6 +250,9 @@ class StarMapApp {
     if (unrevealed.length === 0) return;
     const [r, c] = unrevealed[Math.floor(Math.random() * unrevealed.length)];
     this.state.grid[r][c] = 'star';
+    if (this.autoAssist) {
+      this.applyDeductions();
+    }
     this.refresh();
   }
 

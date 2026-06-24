@@ -7,6 +7,8 @@ export function bindControlHandlers(options: {
   onHint: () => void;
   onHelp: () => void;
   onDifficultyChange: () => void;
+  onModeToggle: () => void;
+  onAutoAssistChange: (enabled: boolean) => void;
 }): void {
   document.getElementById('new-game')?.addEventListener('click', options.onNewGame);
   document.getElementById('reset')?.addEventListener('click', options.onReset);
@@ -14,6 +16,9 @@ export function bindControlHandlers(options: {
   document.getElementById('hint')?.addEventListener('click', options.onHint);
   document.getElementById('help')?.addEventListener('click', options.onHelp);
   document.getElementById('difficulty')?.addEventListener('change', options.onDifficultyChange);
+  document.getElementById('mode-toggle')?.addEventListener('click', options.onModeToggle);
+  const aa = document.getElementById('auto-assist') as HTMLInputElement | null;
+  aa?.addEventListener('change', () => options.onAutoAssistChange(aa.checked));
 }
 
 export function getSelectedDifficulty(): Difficulty {
@@ -57,4 +62,17 @@ export function setUndoEnabled(enabled: boolean): void {
 export function setHintEnabled(enabled: boolean): void {
   const el = document.getElementById('hint') as HTMLButtonElement | null;
   if (el) el.disabled = !enabled;
+}
+
+export function setModeButton(mode: 'star' | 'empty'): void {
+  const el = document.getElementById('mode-toggle') as HTMLButtonElement | null;
+  if (!el) return;
+  el.dataset.mode = mode;
+  el.textContent = mode === 'star' ? '⭐' : '✕';
+  el.classList.toggle('x-mode', mode === 'empty');
+}
+
+export function setAutoAssistChecked(checked: boolean): void {
+  const el = document.getElementById('auto-assist') as HTMLInputElement | null;
+  if (el) el.checked = checked;
 }

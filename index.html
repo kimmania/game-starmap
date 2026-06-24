@@ -39,6 +39,7 @@
             <option value="master">Master (14×14)</option>
           </select>
         </label>
+        <button type="button" id="mode-toggle" class="btn mode-toggle" data-mode="star">⭐</button>
         <button type="button" id="new-game" class="btn btn-primary">New Game</button>
         <button type="button" id="undo" class="btn" disabled>Undo</button>
         <button type="button" id="hint" class="btn">Hint</button>
@@ -60,9 +61,16 @@
               may touch — not even diagonally.
             </p>
           </div>
+          <div class="settings-panel">
+            <label class="setting-row">
+              <input type="checkbox" id="auto-assist" />
+              <span>Auto-Assist</span>
+            </label>
+            <p class="setting-hint">Automatically marks impossible cells when you place a star.</p>
+          </div>
           <p class="hint">
-            <strong>Tip:</strong> Tap a cell to cycle: unknown → star → empty → unknown.
-            Long-press to mark a cell with an X (definitely no star).
+            <strong>Tip:</strong> Use the ⭐/✕ toggle to choose what your tap places.
+            Long-press does the opposite. Givens (ringed stars) cannot be changed.
           </p>
         </aside>
       </main>
