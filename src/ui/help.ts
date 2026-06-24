@@ -1,52 +1,61 @@
-const TUTORIAL_SIZE = 6;
+const TUTORIAL_SIZE = 8;
 
+// Valid game-state snapshots for an 8×8 grid (2 stars per row/col, no-touching)
 const TUTORIAL_STATES = [
   {
     label:
-      'Board at start — cells are gray (unknown). Your goal: place two stars in every row, column, and region. No two stars may touch, even diagonally.',
+      'Board at start — all cells are gray (unknown). Place exactly two stars in every row, every column, and every colored region. No two stars may touch, even diagonally.',
     grid: [
-      '??????',
-      '??????',
-      '??????',
-      '??????',
-      '??????',
-      '??????',
+      '????????',
+      '????????',
+      '????????',
+      '????????',
+      '????????',
+      '????????',
+      '????????',
+      '????????',
     ],
   },
   {
     label:
-      'Placing a star in the top-left corner immediately forces all 8 surrounding cells to be empty (X). Region borders help you see which cells belong together.',
+      'A single star blocks all 8 surrounding cells (shown as X). Only those neighbors are forced empty — the rest of the board stays unknown.',
     grid: [
-      'SXXXXX',
-      'XXXXXX',
-      '??????',
-      '??????',
-      '??????',
-      '??????',
+      'XX??????',
+      'SX??????',
+      'XX??????',
+      '????????',
+      '????????',
+      '????????',
+      '????????',
+      '????????',
     ],
   },
   {
     label:
-      'When a row already has two stars (⭐ ⭐), the rest of that row is automatically eliminated.',
+      'Two stars in the same row force the rest of that row to be empty (X). Their combined neighbors block even more cells in the rows above and below.',
     grid: [
-      'SXXSXX',
-      'XXXXXX',
-      '??????',
-      '??????',
-      '??????',
-      '??????',
+      'XXXX????',
+      'SXSXXXXX',
+      'XXXX????',
+      '????????',
+      '????????',
+      '????????',
+      '????????',
+      '????????',
     ],
   },
   {
     label:
-      'Finished — every row, column, and region has exactly two stars, and no two stars are adjacent. Every empty cell is marked with an X.',
+      'Solved — every row, column, and region has exactly two stars. No two stars are adjacent (even diagonally), and every empty cell is marked with an X.',
     grid: [
-      'SXSXSX',
-      'XSXXSX',
-      'SXSXXX',
-      'XSXXSX',
-      'SXSXXX',
-      'XXSXSX',
+      'XXXXSXSX',
+      'SXSXXXXX',
+      'XXXXSXSX',
+      'SXSXXXXX',
+      'XXXXXSXS',
+      'XSXSXXXX',
+      'XXXXXSXS',
+      'XSXSXXXX',
     ],
   },
 ];
@@ -66,7 +75,13 @@ function makeMiniBoard(state: (typeof TUTORIAL_STATES)[number]): HTMLElement {
       const code = state.grid[r][c];
       if (code === 'S') cell.classList.add('star');
       else if (code === 'X') cell.classList.add('empty');
-      if (r === 0 || r === TUTORIAL_SIZE - 1 || c === 0 || c === TUTORIAL_SIZE - 1 || (r + c) % 3 === 0) {
+      if (
+        r === 0 ||
+        r === TUTORIAL_SIZE - 1 ||
+        c === 0 ||
+        c === TUTORIAL_SIZE - 1 ||
+        (r + c) % 3 === 0
+      ) {
         cell.classList.add('shaded');
       }
       grid.appendChild(cell);
