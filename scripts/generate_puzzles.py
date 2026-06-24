@@ -81,8 +81,8 @@ def generate_solution(size, tries=10000):
 
 def grow_regions(size, num_regions, stars):
     """Return a region grid (list of lists of ints).
-    Uses multi-source BFS from paired star seeds to produce balanced,
-    contiguous regions. Each region contains exactly 2 stars.
+    Each region contains exactly 2 stars and is guaranteed to be contiguous
+    by reserving a connecting path for each star pair before the shared BFS.
     """
     star_list = stars[:]
     random.shuffle(star_list)
@@ -100,18 +100,30 @@ def grow_regions(size, num_regions, stars):
             if best_d is None or d < best_d:
                 best_d = d
                 best = jdx
-        if best is not None:
-            j = unpaired.pop(best)
-            pairs.append((star_list[i], star_list[j]))
-        else:
+        if best is None:
             return None
+        j = unpaired.pop(best)
+        pairs.append((star_list[i], star_list[j]))
 
     assigned = [[-1] * size for _ in range(size)]
+
+    # Reserve a connecting path for every pair to guarantee connectivity.
+    pair_order = list(range(len(pairs)))
+    random.shuffle(pair_order)
+    for idx in pair_order:
+        (r1, c1), (r2, c2) = pairs[idx]
+        path = _find_path(size, assigned, r1, c1, r2, c2)
+        if path is None:
+            return None
+        for pr, pc in path:
+            assigned[pr][pc] = idx
+
+    # Balanced BFS from all reserved cells
     q = deque()
-    for idx, p in enumerate(pairs):
-        for (r, c) in p:
-            assigned[r][c] = idx
-            q.append((r, c, idx))
+    for r in range(size):
+        for c in range(size):
+            if assigned[r][c] != -1:
+                q.append((r, c, assigned[r][c]))
     random.shuffle(q)
 
     while q:
@@ -121,22 +133,59 @@ def grow_regions(size, num_regions, stars):
                 assigned[nr][nc] = rid
                 q.append((nr, nc, rid))
 
-    # Compact IDs
     unique_ids = sorted({assigned[r][c] for r in range(size) for c in range(size)})
     remap = {old: new for new, old in enumerate(unique_ids)}
     grid = [[remap[assigned[r][c]] for c in range(size)] for r in range(size)]
     return grid
 
 
+def _find_path(size, assigned, r1, c1, r2, c2):
+    """Return an orthogonal path from (r1,c1) to (r2,c2) through unassigned cells.
+    Cells already reserved by other regions are treated as walls; the target
+    cell (r2,c2) is always allowed.
+    """
+    q = deque([(r1, c1, [(r1, c1)])])
+    visited = {(r1, c1)}
+    target_rid = assigned[r2][c2]
+    while q:
+        r, c, path = q.popleft()
+        if r == r2 and c == c2:
+            return path
+        for nr, nc in [(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)]:
+            if 0 <= nr < size and 0 <= nc < size and (nr, nc) not in visited:
+                if assigned[nr][nc] == -1 or assigned[nr][nc] == target_rid:
+                    visited.add((nr, nc))
+                    q.append((nr, nc, path + [(nr, nc)]))
+    return None
+
+
 # ---------------------------------------------------------------------------
-# Validator: ensure generated solution matches region counts
+# Validator: ensure generated solution matches region counts and connectivity
 # ---------------------------------------------------------------------------
+
+def is_region_connected(size, regions, rid):
+    cells = [(r, c) for r in range(size) for c in range(size) if regions[r][c] == rid]
+    if len(cells) <= 1:
+        return True
+    start = cells[0]
+    visited = {start}
+    q = deque([start])
+    while q:
+        r, c = q.popleft()
+        for nr, nc in [(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)]:
+            if 0 <= nr < size and 0 <= nc < size and regions[nr][nc] == rid and (nr, nc) not in visited:
+                visited.add((nr, nc))
+                q.append((nr, nc))
+    return len(visited) == len(cells)
+
 
 def validate_regions(size, regions, stars):
     for rid in range(size):
         cnt = sum(1 for r in range(size) for c in range(size)
                   if regions[r][c] == rid and (r, c) in stars)
         if cnt != 2:
+            return False
+        if not is_region_connected(size, regions, rid):
             return False
     return True
 
