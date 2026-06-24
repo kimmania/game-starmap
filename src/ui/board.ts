@@ -1,0 +1,134 @@
+import type { GameState } from '../starmap/types';
+import { getViolationCells } from '../starmap/validator';
+
+interface BoardElements {
+  container: HTMLElement;
+  cells: HTMLElement[][];
+}
+
+export function createBoard(container: HTMLElement): BoardElements {
+  return { container, cells: [] };
+}
+
+function ensureSize(board: BoardElements, size: number): void {
+  if (board.cells.length === size && board.cells[0]?.length === size) return;
+
+  board.container.innerHTML = '';
+  board.container.style.setProperty('--board-n', String(size));
+  board.container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+  board.container.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+
+  const cells: HTMLElement[][] = [];
+  for (let r = 0; r < size; r++) {
+    cells[r] = [];
+    for (let c = 0; c < size; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.row = String(r);
+      cell.dataset.col = String(c);
+      cell.setAttribute('role', 'gridcell');
+      board.container.appendChild(cell);
+      cells[r][c] = cell;
+    }
+  }
+  board.cells = cells;
+}
+
+export function renderBoard(board: BoardElements, state: GameState): void {
+  ensureSize(board, state.size);
+
+  const violations = getViolationCells(state.grid, state.regions);
+  const violationSet = new Set(violations.map((v) => `${v.row},${v.col}`));
+
+  // Precompute region max for consistent shading
+  let maxRegion = 0;
+  for (let r = 0; r < state.size; r++) {
+    for (let c = 0; c < state.size; c++) {
+      maxRegion = Math.max(maxRegion, state.regions[r][c]);
+    }
+  }
+
+  // Render cells and borders
+  for (let r = 0; r < state.size; r++) {
+    for (let c = 0; c < state.size; c++) {
+      const cell = board.cells[r][c];
+      const st = state.grid[r][c];
+      const myRegion = state.regions[r][c];
+
+      cell.className = 'cell';
+
+      // Basic state
+      if (st === 'star') cell.classList.add('star');
+      else if (st === 'empty') cell.classList.add('empty');
+      else cell.classList.add('unknown');
+
+      // Region shading palette (consistent per region ID)
+      const shades = ['shade-a', 'shade-b', 'shade-c', 'shade-d'];
+      cell.classList.add(shades[myRegion % shades.length]);
+
+      if (violationSet.has(`${r},${c}`)) {
+        cell.classList.add('violation');
+      }
+
+      // Borders: thick line when neighbor is different region
+      if (r === 0 || state.regions[r - 1][c] !== myRegion) {
+        cell.classList.add('border-top');
+      }
+      if (c === state.size - 1 || state.regions[r][c + 1] !== myRegion) {
+        cell.classList.add('border-right');
+      }
+      if (r === state.size - 1 || state.regions[r + 1][c] !== myRegion) {
+        cell.classList.add('border-bottom');
+      }
+      if (c === 0 || state.regions[r][c - 1] !== myRegion) {
+        cell.classList.add('border-left');
+      }
+    }
+  }
+}
+
+export function bindBoardInteractions(
+  board: BoardElements,
+  onTap: (row: number, col: number) => void,
+  onLongPress: (row: number, col: number) => void,
+): void {
+  let timer: number | null = null;
+  let longTriggered = false;
+
+  const start = (target: HTMLElement) => {
+    const row = parseInt(target.dataset.row ?? '', 10);
+    const col = parseInt(target.dataset.col ?? '', 10);
+    if (Number.isNaN(row) || Number.isNaN(col)) return;
+    longTriggered = false;
+    timer = window.setTimeout(() => {
+      longTriggered = true;
+      onLongPress(row, col);
+    }, 450);
+  };
+
+  const cancel = () => {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+  };
+
+  board.container.addEventListener('pointerdown', (e) => {
+    const target = (e.target as HTMLElement).closest('.cell') as HTMLElement | null;
+    if (!target) return;
+    start(target);
+  });
+
+  board.container.addEventListener('pointerup', (e) => {
+    const target = (e.target as HTMLElement).closest('.cell') as HTMLElement | null;
+    cancel();
+    if (!target || longTriggered) return;
+    const row = parseInt(target.dataset.row ?? '', 10);
+    const col = parseInt(target.dataset.col ?? '', 10);
+    if (Number.isNaN(row) || Number.isNaN(col)) return;
+    onTap(row, col);
+  });
+
+  board.container.addEventListener('pointerleave', cancel);
+  board.container.addEventListener('contextmenu', (e) => e.preventDefault());
+}

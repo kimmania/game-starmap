@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Star Map" />
+    <meta name="theme-color" content="#0f0f1a" />
+    <meta
+      name="description"
+      content="A spatial logic puzzle: place exactly two stars in every row, column, and region without them touching."
+    />
+    <link rel="apple-touch-icon" href="/game-starmap/icons/apple-touch-icon.png" />
+    <title>Star Map</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="header">
+        <h1 class="title">⭐ Star Map</h1>
+        <div class="status-bar">
+          <span id="difficulty-label" class="difficulty-label">Easy</span>
+          <span id="mistakes" class="mistakes">Mistakes: 0</span>
+        </div>
+      </header>
+
+      <section class="controls">
+        <label class="control-group">
+          <span class="sr-only">Difficulty</span>
+          <select id="difficulty" class="difficulty-select">
+            <option value="tutorial">Tutorial (8×8)</option>
+            <option value="easy" selected>Easy (8×8)</option>
+            <option value="medium">Medium (10×10)</option>
+            <option value="hard">Hard (10×10)</option>
+            <option value="expert">Expert (12×12)</option>
+            <option value="master">Master (14×14)</option>
+          </select>
+        </label>
+        <button type="button" id="new-game" class="btn btn-primary">New Game</button>
+        <button type="button" id="undo" class="btn" disabled>Undo</button>
+        <button type="button" id="reset" class="btn">Reset</button>
+        <button type="button" id="help" class="btn">Help</button>
+      </section>
+
+      <div id="win-banner" class="win-banner hidden" role="status">
+        <strong>Constellation complete!</strong> ⭐⭐
+      </div>
+
+      <main class="game-area">
+        <div id="board" class="board" role="grid" aria-label="Star Map board"></div>
+        <aside class="sidebar">
+          <div class="goal-panel">
+            <p class="goal-label">Your goal</p>
+            <p class="goal-status">
+              Place exactly 2 stars in every row, every column, and every colored region. No two stars
+              may touch — not even diagonally.
+            </p>
+          </div>
+          <p class="hint">
+            <strong>Tip:</strong> Tap a cell to cycle: unknown → star → empty → unknown.
+            Long-press to mark a cell with an X (definitely no star).
+          </p>
+        </aside>
+      </main>
+
+      <footer class="footer">
+        <span id="puzzle-id" class="puzzle-id"></span>
+      </footer>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
