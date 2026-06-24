@@ -62,8 +62,10 @@ class StarMapApp {
 
     const saved = loadSavedGame();
     if (saved && saved.grid && saved.regions && saved.difficulty && !saved.won) {
+      const size = saved.size ?? saved.grid.length;
       this.state = {
         ...saved,
+        size,
         givens: saved.givens || [],
       } as GameState;
       setDifficulty(saved.difficulty);
@@ -127,6 +129,16 @@ class StarMapApp {
   private applyDeductions(): void {
     if (!this.state || !this.autoAssist) return;
     const { size, grid, regions } = this.state;
+
+    // Recompute from scratch so removing a star correctly restores its deductions.
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (grid[r][c] === 'empty' && !this.isGiven(r, c)) {
+          grid[r][c] = 'unknown';
+        }
+      }
+    }
+
     let changed = false;
 
     do {
@@ -204,6 +216,9 @@ class StarMapApp {
     if (!this.state) return;
     resetGameState(this.state);
     this.previousGrid = null;
+    if (this.autoAssist) {
+      this.applyDeductions();
+    }
     this.refresh();
   }
 

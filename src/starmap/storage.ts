@@ -6,6 +6,7 @@ export function saveGame(state: GameState): void {
     const snapshot = {
       puzzleId: state.puzzleId,
       difficulty: state.difficulty,
+      size: state.size,
       grid: state.grid,
       regions: state.regions,
       solution: state.solution,
