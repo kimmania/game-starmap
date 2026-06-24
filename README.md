@@ -48,7 +48,7 @@ Make sure Pages is enabled in repo settings:
 - Source: **GitHub Actions**
 
 After the first workflow run, the PWA will be available at:
-`https://USERNAME.github.io/game-starmap/`
+`https://kimmania.github.io/game-starmap/`
 
 ## Puzzle generation notes
 
