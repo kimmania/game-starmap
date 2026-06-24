@@ -1,4 +1,5 @@
 import type { CellState, Difficulty, GameState } from './starmap/types';
+import { DIFFICULTIES } from './starmap/types';
 import { fetchBank, resetGameState, startNewGame } from './starmap/puzzle';
 import { clearSavedGame, loadSavedGame, saveGame } from './starmap/storage';
 import { getViolationCells, isComplete } from './starmap/validator';
@@ -9,6 +10,7 @@ import {
   setAutoAssistChecked,
   setDifficulty,
   setHintEnabled,
+  setHintVisible,
   setModeButton,
   setUndoEnabled,
   showWinBanner,
@@ -55,24 +57,39 @@ class StarMapApp {
     document.addEventListener('keydown', (e) => this.handleKeydown(e));
 
     // Restore last difficulty so the dropdown isn't stuck on "easy" after refresh.
-    const lastDiff = localStorage.getItem('starmap-last-difficulty');
-    if (lastDiff) {
-      setDifficulty(lastDiff as Difficulty);
+    // Sanitize legacy difficulty names that have been removed or renamed.
+    const legacyDiff = localStorage.getItem('starmap-last-difficulty');
+    if (legacyDiff) {
+      const migration: Record<string, Difficulty> = {
+        medium: 'hard',
+        expert: 'hard',
+        master: 'hard',
+      };
+      const sanitized = migration[legacyDiff] || legacyDiff;
+      if (DIFFICULTIES.includes(sanitized as Difficulty)) {
+        setDifficulty(sanitized as Difficulty);
+      }
     }
 
     const saved = loadSavedGame();
     if (saved && saved.grid && saved.regions && saved.difficulty && !saved.won) {
-      const size = saved.size ?? saved.grid.length;
-      this.state = {
-        ...saved,
-        size,
-        givens: saved.givens || [],
-      } as GameState;
-      setDifficulty(saved.difficulty);
-      if (this.autoAssist) {
-        this.applyDeductions();
+      const savedDiff = saved.difficulty;
+      if (!DIFFICULTIES.includes(savedDiff as Difficulty)) {
+        clearSavedGame();
+        await this.newGame();
+      } else {
+        const size = saved.size ?? saved.grid.length;
+        this.state = {
+          ...saved,
+          size,
+          givens: saved.givens || [],
+        } as GameState;
+        setDifficulty(savedDiff);
+        if (this.autoAssist) {
+          this.applyDeductions();
+        }
+        this.refresh();
       }
-      this.refresh();
     } else {
       await this.newGame();
     }
@@ -358,6 +375,7 @@ class StarMapApp {
     updatePuzzleId(this.state.puzzleId);
     setUndoEnabled(this.previousGrid !== null);
     setHintEnabled(true);
+    setHintVisible(this.state.difficulty !== 'hard');
     updateDifficultyLabel(
       this.state.difficulty.charAt(0).toUpperCase() + this.state.difficulty.slice(1),
     );

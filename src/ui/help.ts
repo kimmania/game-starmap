@@ -119,7 +119,8 @@ export function openHelp(): void {
       <li>You must place exactly 2 stars per row, 2 per column, and 2 per region.</li>
     </ul>
     <p><strong>Tips:</strong> If a region only has a few cells left and already has one star, the second star is constrained. When a row reaches two stars, mark the rest of the row as empty.</p>
-    <h3 style="margin-top:12px;font-size:1.1rem;">Visual walkthrough</h3>
+    <p><strong>Hard mode note:</strong> The Hard (10×10) level does not guarantee a single unique solution. Multiple valid completions may exist, so there is no Hint button on this difficulty.</p>
+    <h3 style="margin-top:12px;font-size:1.1rem;\">Visual walkthrough</h3>
   `;
 
   const walkthrough = document.createElement('div');

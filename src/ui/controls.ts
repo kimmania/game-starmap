@@ -59,6 +59,11 @@ export function setUndoEnabled(enabled: boolean): void {
   if (el) el.disabled = !enabled;
 }
 
+export function setHintVisible(visible: boolean): void {
+  const el = document.getElementById('hint') as HTMLButtonElement | null;
+  if (el) el.classList.toggle('hidden', !visible);
+}
+
 export function setHintEnabled(enabled: boolean): void {
   const el = document.getElementById('hint') as HTMLButtonElement | null;
   if (el) el.disabled = !enabled;

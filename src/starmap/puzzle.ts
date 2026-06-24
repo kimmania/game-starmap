@@ -4,10 +4,7 @@ import { DIFFICULTY_GIVENS, RECENT_KEY } from './types';
 const banks: Record<Difficulty, Puzzle[] | null> = {
   tutorial: null,
   easy: null,
-  medium: null,
   hard: null,
-  expert: null,
-  master: null,
 };
 
 function getRecent(): string[] {

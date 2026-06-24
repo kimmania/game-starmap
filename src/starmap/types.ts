@@ -1,4 +1,4 @@
-export type Difficulty = 'tutorial' | 'easy' | 'medium' | 'hard' | 'expert' | 'master';
+export type Difficulty = 'tutorial' | 'easy' | 'hard';
 
 export type CellState = 'unknown' | 'star' | 'empty'; // empty = X mark
 
@@ -22,15 +22,12 @@ export interface GameState {
   givens: { row: number; col: number }[];
 }
 
-export const DIFFICULTIES: Difficulty[] = ['tutorial', 'easy', 'medium', 'hard', 'expert', 'master'];
+export const DIFFICULTIES: Difficulty[] = ['tutorial', 'easy', 'hard'];
 
 export const DIFFICULTY_GIVENS: Record<Difficulty, number> = {
   tutorial: 6,
   easy: 2,
-  medium: 1,
-  hard: 0,
-  expert: 0,
-  master: 0,
+  hard: 1,
 };
 
 export const STORAGE_KEY = 'starmap-save';

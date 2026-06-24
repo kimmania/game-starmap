@@ -14,10 +14,7 @@ from pathlib import Path
 DIFFICULTY = {
     "tutorial": {"size": 8,  "enforce_uniqueness": True,  "target": 2,   "timeout": 2.0},
     "easy":     {"size": 8,  "enforce_uniqueness": True,  "target": 500, "timeout": 2.0},
-    "medium":   {"size": 10, "enforce_uniqueness": False, "target": 500, "timeout": 2.0},
     "hard":     {"size": 10, "enforce_uniqueness": False, "target": 500, "timeout": 2.0},
-    "expert":   {"size": 12, "enforce_uniqueness": False, "target": 500, "timeout": 3.0},
-    "master":   {"size": 14, "enforce_uniqueness": False, "target": 500, "timeout": 3.0},
 }
 TARGET = 500  # default fallback
 OUTDIR = Path(__file__).resolve().parent.parent / "public" / "puzzles"
