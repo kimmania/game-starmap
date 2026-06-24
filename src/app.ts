@@ -105,6 +105,10 @@ class StarMapApp {
   private handleAutoAssistChange(enabled: boolean): void {
     this.autoAssist = enabled;
     localStorage.setItem(AUTO_ASSIST_KEY, enabled ? '1' : '0');
+    if (enabled && this.state) {
+      this.applyDeductions();
+      this.refresh();
+    }
   }
 
   private applyDeductions(): void {
