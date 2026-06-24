@@ -12,12 +12,12 @@ from pathlib import Path
 # Config
 # ---------------------------------------------------------------------------
 DIFFICULTY = {
-    "tutorial": {"size": 8,  "enforce_uniqueness": True, "target": 2},
-    "easy":     {"size": 8,  "enforce_uniqueness": True, "target": 500},
-    "medium":   {"size": 10, "enforce_uniqueness": False, "target": 500},
-    "hard":     {"size": 10, "enforce_uniqueness": False, "target": 500},
-    "expert":   {"size": 12, "enforce_uniqueness": False, "target": 500},
-    "master":   {"size": 14, "enforce_uniqueness": False, "target": 500},
+    "tutorial": {"size": 8,  "enforce_uniqueness": True, "target": 2,   "timeout": 2.0},
+    "easy":     {"size": 8,  "enforce_uniqueness": True, "target": 500, "timeout": 2.0},
+    "medium":   {"size": 10, "enforce_uniqueness": True, "target": 500, "timeout": 2.0},
+    "hard":     {"size": 10, "enforce_uniqueness": True, "target": 500, "timeout": 2.0},
+    "expert":   {"size": 12, "enforce_uniqueness": True, "target": 500, "timeout": 3.0},
+    "master":   {"size": 14, "enforce_uniqueness": True, "target": 500, "timeout": 3.0},
 }
 TARGET = 500  # default fallback
 OUTDIR = Path(__file__).resolve().parent.parent / "public" / "puzzles"
@@ -76,14 +76,15 @@ def generate_solution(size, tries=10000):
 
 
 # ---------------------------------------------------------------------------
-# Region generation (random multi-source BFS)
+# Region generation (DFS-based, max-distance pairing)
 # ---------------------------------------------------------------------------
 
 def grow_regions(size, num_regions, stars):
     """Return a region grid (list of lists of ints).
-    Uses randomized multi-source BFS from each pair of star seeds.
-    Guarantees each region is contiguous and contains exactly 2 stars."""
-    # pair closest stars greedily for spatial coherence
+    Uses randomized DFS growth from far-apart star pairs.
+    Guarantees each region is contiguous and contains exactly 2 stars.
+    """
+    # Pair stars at MAXIMUM distance to create long, constrained regions
     star_list = stars[:]
     random.shuffle(star_list)
     unpaired = list(range(len(star_list)))
@@ -97,7 +98,7 @@ def grow_regions(size, num_regions, stars):
         for jdx, j in enumerate(unpaired):
             r2, c2 = star_list[j]
             d = abs(r1 - r2) + abs(c1 - c2)
-            if best_d is None or d < best_d:
+            if best_d is None or d > best_d:
                 best_d = d
                 best = jdx
         if best is not None:
@@ -107,22 +108,22 @@ def grow_regions(size, num_regions, stars):
             return None
 
     assigned = [[-1] * size for _ in range(size)]
-    q = deque()
+    # DFS stack instead of BFS queue — creates snake-like regions
+    stack = []
     for idx, p in enumerate(pairs):
         for (r, c) in p:
             assigned[r][c] = idx
-            q.append((r, c, idx))
-    random.shuffle(q)
+            stack.append((r, c, idx))
+    random.shuffle(stack)
 
-    # BFS: cells are assigned to whichever region reaches them first
-    while q:
-        r, c, rid = q.popleft()
+    while stack:
+        r, c, rid = stack.pop()
         neighbors = [(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)]
         random.shuffle(neighbors)
         for nr, nc in neighbors:
             if 0 <= nr < size and 0 <= nc < size and assigned[nr][nc] == -1:
                 assigned[nr][nc] = rid
-                q.append((nr, nc, rid))
+                stack.append((nr, nc, rid))
 
     # Compact IDs
     unique_ids = sorted({assigned[r][c] for r in range(size) for c in range(size)})
@@ -149,7 +150,6 @@ def validate_regions(size, regions, stars):
 # ---------------------------------------------------------------------------
 
 def count_solutions(size, regions, limit=2, timeout=1.5):
-    import time
     region_of = {}
     rids = set()
     for r in range(size):
@@ -229,7 +229,7 @@ def count_solutions(size, regions, limit=2, timeout=1.5):
 # Run one puzzle attempt
 # ---------------------------------------------------------------------------
 
-def make_puzzle(size, enforce_uniqueness):
+def make_puzzle(size, enforce_uniqueness, timeout):
     stars = generate_solution(size)
     if stars is None:
         return None, None
@@ -240,7 +240,7 @@ def make_puzzle(size, enforce_uniqueness):
     if not validate_regions(size, regions, stars):
         return None, None
     if enforce_uniqueness:
-        sol_count = count_solutions(size, regions, limit=2, timeout=2.0)
+        sol_count = count_solutions(size, regions, limit=2, timeout=timeout)
         if sol_count != 1:
             return None, None
     solution_str = "".join(
@@ -257,6 +257,7 @@ def make_puzzle(size, enforce_uniqueness):
 def generate_bank(difficulty, info, target):
     size = info["size"]
     enforce = info["enforce_uniqueness"]
+    timeout = info.get("timeout", 2.0)
     puzzles = []
     seen = set()
     attempts = 0
@@ -265,7 +266,7 @@ def generate_bank(difficulty, info, target):
     print(f"Generating {difficulty} ({size}x{size}) ...")
     while len(puzzles) < target and attempts < max_attempts:
         attempts += 1
-        regions, solution = make_puzzle(size, enforce)
+        regions, solution = make_puzzle(size, enforce, timeout)
         if regions is None:
             continue
         key = json.dumps(regions)
