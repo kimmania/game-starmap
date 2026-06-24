@@ -109,8 +109,11 @@ export function openHelp(): void {
     <h2>How to play Star Map</h2>
     <p><strong>Goal:</strong> Place exactly two stars in every row, every column, and every colored region. No two stars may touch — not even diagonally.</p>
     <ul style="padding-left:18px;margin:8px 0;">
-      <li>Tap a cell to cycle: unknown → star → empty (X) → unknown.</li>
-      <li>Long-press a cell to mark it with an X (definitely no star).</li>
+      <li>Use the <strong>⭐/✕ toggle</strong> next to the difficulty selector to choose what your tap places.</li>
+      <li><strong>Tap</strong> a cell to place (or remove) the selected mark.</li>
+      <li><strong>Long-press</strong> does the opposite — place an X in Star mode, or a star in X mode.</li>
+      <li><strong>Givens</strong> (ringed stars) are pre-placed and cannot be changed.</li>
+      <li><strong>Auto-Assist</strong> (sidebar checkbox) automatically marks impossible cells as X whenever you place a star.</li>
       <li>Stars will pulse red if they violate a rule: too many in a row/column/region, or touching another star.</li>
       <li>Region boundaries are shown with thick borders.</li>
       <li>You must place exactly 2 stars per row, 2 per column, and 2 per region.</li>

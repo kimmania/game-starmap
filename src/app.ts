@@ -1,4 +1,4 @@
-import type { CellState, GameState } from './starmap/types';
+import type { CellState, Difficulty, GameState } from './starmap/types';
 import { fetchBank, resetGameState, startNewGame } from './starmap/puzzle';
 import { clearSavedGame, loadSavedGame, saveGame } from './starmap/storage';
 import { getViolationCells, isComplete } from './starmap/validator';
@@ -54,6 +54,12 @@ class StarMapApp {
 
     document.addEventListener('keydown', (e) => this.handleKeydown(e));
 
+    // Restore last difficulty so the dropdown isn't stuck on "easy" after refresh.
+    const lastDiff = localStorage.getItem('starmap-last-difficulty');
+    if (lastDiff) {
+      setDifficulty(lastDiff as Difficulty);
+    }
+
     const saved = loadSavedGame();
     if (saved && saved.grid && saved.regions && saved.difficulty && !saved.won) {
       this.state = {
@@ -61,6 +67,9 @@ class StarMapApp {
         givens: saved.givens || [],
       } as GameState;
       setDifficulty(saved.difficulty);
+      if (this.autoAssist) {
+        this.applyDeductions();
+      }
       this.refresh();
     } else {
       await this.newGame();
@@ -81,7 +90,11 @@ class StarMapApp {
 
     try {
       const difficulty = getSelectedDifficulty();
+      localStorage.setItem('starmap-last-difficulty', difficulty);
       this.state = await startNewGame(difficulty);
+      if (this.autoAssist) {
+        this.applyDeductions();
+      }
       this.refresh();
     } catch (err) {
       console.error(err);
