@@ -27,7 +27,7 @@ export const DIFFICULTIES: Difficulty[] = ['tutorial', 'easy', 'hard'];
 export const DIFFICULTY_GIVENS: Record<Difficulty, number> = {
   tutorial: 6,
   easy: 2,
-  hard: 1,
+  hard: 0,
 };
 
 export const STORAGE_KEY = 'starmap-save';
