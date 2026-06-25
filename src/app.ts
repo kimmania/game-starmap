@@ -40,7 +40,6 @@ class StarMapApp {
     bindBoardInteractions(
       this.board,
       (row, col) => this.handleTap(row, col),
-      (row, col) => this.handleLongPress(row, col),
     );
 
     bindControlHandlers({
@@ -259,17 +258,6 @@ class StarMapApp {
     }
     this.state.grid[row][col] = next;
     if (this.autoAssist && next === 'star') {
-      this.applyDeductions();
-    }
-    this.refresh();
-  }
-
-  private handleLongPress(row: number, col: number): void {
-    if (!this.state || this.state.won || this.isGiven(row, col)) return;
-    this.stashUndo();
-    const opposite = this.placeMode === 'star' ? 'empty' : 'star';
-    this.state.grid[row][col] = opposite;
-    if (this.autoAssist && opposite === 'star') {
       this.applyDeductions();
     }
     this.refresh();

@@ -115,45 +115,15 @@ export function renderBoard(board: BoardElements, state: GameState): void {
 export function bindBoardInteractions(
   board: BoardElements,
   onTap: (row: number, col: number) => void,
-  onLongPress: (row: number, col: number) => void,
 ): void {
-  let timer: number | null = null;
-  let longTriggered = false;
-
-  const start = (target: HTMLElement) => {
-    const row = parseInt(target.dataset.row ?? '', 10);
-    const col = parseInt(target.dataset.col ?? '', 10);
-    if (Number.isNaN(row) || Number.isNaN(col)) return;
-    longTriggered = false;
-    timer = window.setTimeout(() => {
-      longTriggered = true;
-      onLongPress(row, col);
-    }, 450);
-  };
-
-  const cancel = () => {
-    if (timer) {
-      clearTimeout(timer);
-      timer = null;
-    }
-  };
-
-  board.container.addEventListener('pointerdown', (e) => {
-    const target = (e.target as HTMLElement).closest('.cell') as HTMLElement | null;
-    if (!target) return;
-    start(target);
-  });
-
   board.container.addEventListener('pointerup', (e) => {
     const target = (e.target as HTMLElement).closest('.cell') as HTMLElement | null;
-    cancel();
-    if (!target || longTriggered) return;
+    if (!target) return;
     const row = parseInt(target.dataset.row ?? '', 10);
     const col = parseInt(target.dataset.col ?? '', 10);
     if (Number.isNaN(row) || Number.isNaN(col)) return;
     onTap(row, col);
   });
 
-  board.container.addEventListener('pointerleave', cancel);
   board.container.addEventListener('contextmenu', (e) => e.preventDefault());
 }
