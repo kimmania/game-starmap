@@ -55,6 +55,8 @@ class StarMapApp {
       onAutoAssistChange: (enabled) => this.handleAutoAssistChange(enabled),
     });
 
+    document.getElementById('play-again')?.addEventListener('click', () => void this.newGame());
+
     document.addEventListener('keydown', (e) => this.handleKeydown(e));
 
     // Restore last difficulty so the dropdown isn't stuck on "easy" after refresh.

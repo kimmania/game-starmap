@@ -149,6 +149,18 @@ html, body {
   background: var(--accent-dim);
 }
 
+.btn-secondary {
+  display: inline-block;
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+  text-decoration: none;
+}
+
+.btn-secondary:hover {
+  background: var(--surface-2);
+}
+
 /* Win banner */
 .win-banner {
   background: rgba(74, 222, 128, 0.12);
@@ -159,6 +171,19 @@ html, body {
   text-align: center;
   margin-bottom: 14px;
   font-size: 1.05rem;
+}
+
+.win-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.win-actions .btn {
+  font-size: 0.9rem;
+  padding: 6px 12px;
 }
 
 .hidden {
