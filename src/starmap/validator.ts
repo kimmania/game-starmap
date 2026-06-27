@@ -107,19 +107,18 @@ export function isComplete(state: GameState): boolean {
   }
   // region counts
   const regionCounts: Map<number, number> = new Map();
+  const expectedRegions = new Set<number>();
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
+      const rid = state.regions[r][c];
+      expectedRegions.add(rid);
       if (grid[r][c] === 'star') {
-        const rid = state.regions[r][c];
         regionCounts.set(rid, (regionCounts.get(rid) || 0) + 1);
       }
     }
   }
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
-      const rid = state.regions[r][c];
-      if ((regionCounts.get(rid) || 0) !== 2) return false;
-    }
+  for (const rid of expectedRegions) {
+    if ((regionCounts.get(rid) || 0) !== 2) return false;
   }
   return true;
 }

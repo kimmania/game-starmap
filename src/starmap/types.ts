@@ -18,8 +18,8 @@ export interface GameState {
   difficulty: Difficulty;
   mistakes: number;
   won: boolean;
-  history: string[]; // previous grid snapshots
   givens: { row: number; col: number }[];
+  deduced: boolean[][]; // true if this cell was auto-marked empty
 }
 
 export const DIFFICULTIES: Difficulty[] = ['tutorial', 'easy', 'hard'];

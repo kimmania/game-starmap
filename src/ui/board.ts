@@ -83,18 +83,20 @@ export function renderBoard(board: BoardElements, state: GameState): void {
     }
   }
 
-  // Clear old counters
-  board.container.querySelectorAll('.row-counter, .col-counter').forEach((el) => el.remove());
-
   // Row counters (right edge of each row)
   for (let r = 0; r < state.size; r++) {
+    const cell = board.cells[r][state.size - 1];
+    let counter = cell.querySelector('.row-counter') as HTMLSpanElement | null;
+    if (!counter) {
+      counter = document.createElement('span');
+      counter.className = 'row-counter';
+      cell.appendChild(counter);
+    }
     const rowStars = state.grid[r].filter((s) => s === 'star').length;
-    const counter = document.createElement('span');
-    counter.className = 'row-counter';
     counter.textContent = `${rowStars}/2`;
+    counter.classList.remove('complete', 'partial');
     if (rowStars === 2) counter.classList.add('complete');
     else if (rowStars === 1) counter.classList.add('partial');
-    board.cells[r][state.size - 1].appendChild(counter);
   }
 
   // Column counters (bottom edge of each column)
@@ -103,12 +105,17 @@ export function renderBoard(board: BoardElements, state: GameState): void {
     for (let r = 0; r < state.size; r++) {
       if (state.grid[r][c] === 'star') colStars++;
     }
-    const counter = document.createElement('span');
-    counter.className = 'col-counter';
+    const cell = board.cells[state.size - 1][c];
+    let counter = cell.querySelector('.col-counter') as HTMLSpanElement | null;
+    if (!counter) {
+      counter = document.createElement('span');
+      counter.className = 'col-counter';
+      cell.appendChild(counter);
+    }
     counter.textContent = `${colStars}/2`;
+    counter.classList.remove('complete', 'partial');
     if (colStars === 2) counter.classList.add('complete');
     else if (colStars === 1) counter.classList.add('partial');
-    board.cells[state.size - 1][c].appendChild(counter);
   }
 }
 

@@ -12,8 +12,8 @@ export function saveGame(state: GameState): void {
       solution: state.solution,
       mistakes: state.mistakes,
       won: state.won,
-      history: state.history,
       givens: state.givens,
+      deduced: state.deduced,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
   } catch {

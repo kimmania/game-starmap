@@ -27,8 +27,10 @@ class StarMapApp {
   private board = createBoard(document.getElementById('board')!);
   private loading = false;
   private previousGrid: CellState[][] | null = null;
+  private previousDeduced: boolean[][] | null = null;
   private placeMode: 'star' | 'empty' = 'star';
   private autoAssist = false;
+  private saveTimer: ReturnType<typeof setTimeout> | null = null;
 
   async init(): Promise<void> {
     fetchBank('easy').catch(() => {});
@@ -78,10 +80,13 @@ class StarMapApp {
         await this.newGame();
       } else {
         const size = saved.size ?? saved.grid.length;
+        const deduced = (saved as any).deduced ??
+          Array.from({ length: size }, () => Array.from({ length: size }, () => false));
         this.state = {
           ...saved,
           size,
           givens: saved.givens || [],
+          deduced,
         } as GameState;
         setDifficulty(savedDiff);
         if (this.autoAssist) {
@@ -102,18 +107,21 @@ class StarMapApp {
   private async newGame(): Promise<void> {
     if (this.loading) return;
     this.loading = true;
-    clearSavedGame();
     this.previousGrid = null;
+    this.previousDeduced = null;
     closeHelp();
 
     try {
       const difficulty = getSelectedDifficulty();
       localStorage.setItem('starmap-last-difficulty', difficulty);
       this.state = await startNewGame(difficulty);
+      clearSavedGame();
       if (this.autoAssist) {
         this.applyDeductions();
       }
       this.refresh();
+      // Immediate save for the fresh state so a page reload doesn't lose it
+      saveGame(this.state);
     } catch (err) {
       console.error(err);
       alert('Could not load a puzzle. Please try again.');
@@ -144,13 +152,15 @@ class StarMapApp {
 
   private applyDeductions(): void {
     if (!this.state || !this.autoAssist) return;
-    const { size, grid, regions } = this.state;
+    const { size, grid, regions, deduced } = this.state;
 
-    // Recompute from scratch so removing a star correctly restores its deductions.
+    // Recompute from scratch: only clear cells that were auto-deduced,
+    // leaving manual player-placed X marks intact.
     for (let r = 0; r < size; r++) {
       for (let c = 0; c < size; c++) {
-        if (grid[r][c] === 'empty' && !this.isGiven(r, c)) {
+        if (grid[r][c] === 'empty' && deduced[r][c] && !this.isGiven(r, c)) {
           grid[r][c] = 'unknown';
+          deduced[r][c] = false;
         }
       }
     }
@@ -172,6 +182,7 @@ class StarMapApp {
               if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
                 if (grid[nr][nc] === 'unknown' && !this.isGiven(nr, nc)) {
                   grid[nr][nc] = 'empty';
+                  deduced[nr][nc] = true;
                   changed = true;
                 }
               }
@@ -186,6 +197,7 @@ class StarMapApp {
         for (let c = 0; c < size; c++) {
           if (grid[r][c] === 'unknown' && !this.isGiven(r, c)) {
             grid[r][c] = 'empty';
+            deduced[r][c] = true;
             changed = true;
           }
         }
@@ -201,6 +213,7 @@ class StarMapApp {
         for (let r = 0; r < size; r++) {
           if (grid[r][c] === 'unknown' && !this.isGiven(r, c)) {
             grid[r][c] = 'empty';
+            deduced[r][c] = true;
             changed = true;
           }
         }
@@ -221,6 +234,7 @@ class StarMapApp {
           const rid = regions[r][c];
           if ((regionStars.get(rid) || 0) === 2 && grid[r][c] === 'unknown' && !this.isGiven(r, c)) {
             grid[r][c] = 'empty';
+            deduced[r][c] = true;
             changed = true;
           }
         }
@@ -232,15 +246,19 @@ class StarMapApp {
     if (!this.state) return;
     resetGameState(this.state);
     this.previousGrid = null;
+    this.previousDeduced = null;
     if (this.autoAssist) {
       this.applyDeductions();
     }
     this.refresh();
+    // Persist the reset board immediately
+    saveGame(this.state);
   }
 
   private stashUndo(): void {
     if (!this.state || this.state.won) return;
     this.previousGrid = this.state.grid.map((row) => [...row]);
+    this.previousDeduced = this.state.deduced.map((row) => [...row]);
   }
 
   private handleTap(row: number, col: number): void {
@@ -257,6 +275,8 @@ class StarMapApp {
       next = 'unknown';
     }
     this.state.grid[row][col] = next;
+    // Any manual player action removes the auto-deduced flag for this cell
+    this.state.deduced[row][col] = false;
     if (this.autoAssist && next === 'star') {
       this.applyDeductions();
     }
@@ -266,12 +286,16 @@ class StarMapApp {
   private handleUndo(): void {
     if (!this.state || !this.previousGrid) return;
     this.state.grid = this.previousGrid;
+    if (this.previousDeduced) {
+      this.state.deduced = this.previousDeduced;
+    }
     this.previousGrid = null;
+    this.previousDeduced = null;
     this.refresh();
   }
 
   private handleHint(): void {
-    if (!this.state || this.state.won) return;
+    if (!this.state || this.state.won || this.state.difficulty === 'hard') return;
     this.stashUndo();
     const { size, grid, regions, solution } = this.state;
 
@@ -346,6 +370,16 @@ class StarMapApp {
     }
   }
 
+  private scheduleSave(): void {
+    if (this.saveTimer) clearTimeout(this.saveTimer);
+    this.saveTimer = setTimeout(() => {
+      this.saveTimer = null;
+      if (this.state && !this.state.won) {
+        saveGame(this.state);
+      }
+    }, 200);
+  }
+
   private computeMistakes(): number {
     if (!this.state) return 0;
     const violations = getViolationCells(this.state.grid, this.state.regions);
@@ -375,7 +409,7 @@ class StarMapApp {
       renderBoard(this.board, this.state);
     } else if (!this.state.won) {
       showWinBanner(false);
-      saveGame(this.state);
+      this.scheduleSave();
     }
   }
 }

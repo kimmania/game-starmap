@@ -39,6 +39,9 @@ export function createGameState(puzzle: Puzzle, difficulty: Difficulty): GameSta
   const grid: CellState[][] = Array.from({ length: size }, () =>
     Array.from({ length: size }, () => 'unknown'),
   );
+  const deduced: boolean[][] = Array.from({ length: size }, () =>
+    Array.from({ length: size }, () => false),
+  );
   return {
     size,
     grid,
@@ -48,8 +51,8 @@ export function createGameState(puzzle: Puzzle, difficulty: Difficulty): GameSta
     difficulty,
     mistakes: 0,
     won: false,
-    history: [],
     givens: [],
+    deduced,
   };
 }
 
@@ -97,6 +100,7 @@ export function resetGameState(state: GameState): void {
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
       state.grid[r][c] = 'unknown';
+      state.deduced[r][c] = false;
     }
   }
   // Restore givens
@@ -105,5 +109,4 @@ export function resetGameState(state: GameState): void {
   }
   state.won = false;
   state.mistakes = 0;
-  state.history = [];
 }

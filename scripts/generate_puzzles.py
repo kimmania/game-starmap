@@ -241,7 +241,6 @@ def count_solutions(size, regions, limit=2, timeout=1.5):
                 if abs(c1 - c2) <= 1:
                     continue
                 pairs.append((c1, c2))
-        random.shuffle(pairs)
         for c1, c2 in pairs:
             rid1 = rid_to_idx[region_of[(r, c1)]]
             rid2 = rid_to_idx[region_of[(r, c2)]]
